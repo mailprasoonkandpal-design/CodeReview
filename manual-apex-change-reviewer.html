@@ -1,0 +1,689 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Apex Change Reviewer</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f7f9;
+      --panel: #ffffff;
+      --panel-2: #eef2f7;
+      --text: #172033;
+      --muted: #647084;
+      --border: #d6dce6;
+      --accent: #0f766e;
+      --accent-2: #155e75;
+      --danger: #b42318;
+      --high: #b54708;
+      --medium: #175cd3;
+      --low: #4e5ba6;
+      --shadow: 0 8px 24px rgba(23, 32, 51, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font: 14px/1.5 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    header {
+      border-bottom: 1px solid var(--border);
+      background: var(--panel);
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      width: min(1440px, 100%);
+      margin: 0 auto;
+      padding: 14px 20px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    .status {
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    main {
+      width: min(1440px, 100%);
+      margin: 0 auto;
+      padding: 18px 20px 28px;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(360px, 0.85fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      min-width: 0;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 14px;
+      letter-spacing: 0;
+    }
+
+    .fields {
+      display: grid;
+      grid-template-columns: minmax(160px, 1fr) minmax(160px, 1fr);
+      gap: 10px;
+      padding: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #ffffff;
+      color: var(--text);
+      font: inherit;
+      letter-spacing: 0;
+    }
+
+    input,
+    select {
+      height: 36px;
+      padding: 0 10px;
+    }
+
+    textarea {
+      min-height: 540px;
+      resize: vertical;
+      padding: 12px;
+      font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      tab-size: 2;
+    }
+
+    .code-wrap {
+      padding: 14px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 14px;
+      border-top: 1px solid var(--border);
+    }
+
+    button {
+      min-height: 34px;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      padding: 0 12px;
+      background: var(--accent);
+      color: #ffffff;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      background: #ffffff;
+      color: var(--accent-2);
+      border-color: var(--border);
+    }
+
+    button:focus,
+    input:focus,
+    textarea:focus,
+    select:focus {
+      outline: 2px solid rgba(15, 118, 110, 0.25);
+      outline-offset: 1px;
+    }
+
+    .results {
+      display: grid;
+      gap: 12px;
+      padding: 14px;
+    }
+
+    .finding {
+      border: 1px solid var(--border);
+      border-left-width: 4px;
+      border-radius: 7px;
+      padding: 10px 12px;
+      background: #ffffff;
+    }
+
+    .finding.Critical {
+      border-left-color: var(--danger);
+    }
+
+    .finding.High {
+      border-left-color: var(--high);
+    }
+
+    .finding.Medium {
+      border-left-color: var(--medium);
+    }
+
+    .finding.Low {
+      border-left-color: var(--low);
+    }
+
+    .finding h3 {
+      margin: 0 0 8px;
+      font-size: 13px;
+      letter-spacing: 0;
+    }
+
+    .finding p {
+      margin: 6px 0;
+      color: var(--text);
+    }
+
+    .finding .meta {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .empty {
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+      padding: 18px;
+      color: var(--muted);
+      background: var(--panel-2);
+    }
+
+    .line-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      border-radius: 999px;
+      padding: 0 8px;
+      background: var(--panel-2);
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    .prompt-box {
+      min-height: 300px;
+      font-size: 12px;
+      background: #fbfcfe;
+    }
+
+    pre {
+      margin: 0;
+      padding: 10px;
+      overflow: auto;
+      border-radius: 6px;
+      background: #0f172a;
+      color: #e2e8f0;
+      font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    @media (max-width: 980px) {
+      .workspace,
+      .fields {
+        grid-template-columns: 1fr;
+      }
+
+      .status {
+        white-space: normal;
+        text-align: right;
+      }
+
+      textarea {
+        min-height: 360px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="topbar">
+      <h1>Apex Change Reviewer</h1>
+      <div class="status" id="status">Ready</div>
+    </div>
+  </header>
+
+  <main>
+    <div class="workspace">
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Input</h2>
+          <button class="secondary" id="sampleBtn" type="button">Load Sample</button>
+        </div>
+
+        <div class="fields">
+          <label>
+            Class Name
+            <input id="className" placeholder="AccountService">
+          </label>
+
+          <label>
+            Changed Line Numbers
+            <input id="changedLines" placeholder="12, 18-22, 41">
+          </label>
+        </div>
+
+        <div class="code-wrap">
+          <label>
+            Apex Code
+            <textarea id="codeInput" spellcheck="false" placeholder="Paste Apex class or trigger here"></textarea>
+          </label>
+        </div>
+
+        <div class="actions">
+          <button id="reviewBtn" type="button">Review Change</button>
+          <button class="secondary" id="copyPromptBtn" type="button">Copy AI Prompt</button>
+          <button class="secondary" id="clearBtn" type="button">Clear</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Feedback</h2>
+          <div class="line-list" id="changedLinePills"></div>
+        </div>
+
+        <div class="results" id="results">
+          <div class="empty">Paste code, enter changed line numbers, then run review.</div>
+        </div>
+
+        <div class="panel-head">
+          <h2>Focused AI Prompt</h2>
+          <button class="secondary" id="copyReportBtn" type="button">Copy Feedback</button>
+        </div>
+        <div class="code-wrap">
+          <textarea class="prompt-box" id="promptOutput" spellcheck="false" readonly></textarea>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const codeInput = document.getElementById('codeInput');
+    const classNameInput = document.getElementById('className');
+    const changedLinesInput = document.getElementById('changedLines');
+    const results = document.getElementById('results');
+    const promptOutput = document.getElementById('promptOutput');
+    const statusEl = document.getElementById('status');
+    const changedLinePills = document.getElementById('changedLinePills');
+
+    const sampleCode = `public without sharing class AccountService {
+  @AuraEnabled
+  public static List<Account> findAccounts(String searchText) {
+    String queryText = 'SELECT Id, Name, AnnualRevenue FROM Account WHERE Name LIKE \\'%' + searchText + '%\\'';
+    return Database.query(queryText);
+  }
+
+  public static void updateAccounts(List<Account> accounts) {
+    for (Account acc : accounts) {
+      Account existing = [SELECT Id, Name FROM Account WHERE Id = :acc.Id];
+      existing.Name = acc.Name;
+      update existing;
+    }
+  }
+}`;
+
+    const rules = [
+      {
+        title: 'SOQL inside a loop',
+        severity: 'High',
+        pattern: /\[[\s\S]*?\bSELECT\b[\s\S]*?\bFROM\b[\s\S]*?\]/i,
+        inLoop: true,
+        risk: 'This can hit the 100-query governor limit when multiple records are processed.',
+        recommendation: 'Move the query outside the loop and use a Map keyed by record Id or another stable key.'
+      },
+      {
+        title: 'DML inside a loop',
+        severity: 'High',
+        pattern: /\b(insert|update|upsert|delete|undelete|merge)\b/i,
+        inLoop: true,
+        risk: 'This can hit DML governor limits and creates partial-processing risk.',
+        recommendation: 'Collect records in a list and perform one bulk DML operation after the loop.'
+      },
+      {
+        title: 'Dynamic SOQL execution',
+        severity: 'High',
+        pattern: /\bDatabase\.query\s*\(/i,
+        risk: 'Dynamic SOQL can become an injection issue when user-controlled input affects the query.',
+        recommendation: 'Use bind variables where possible. If dynamic SOQL is required, validate inputs and escape search strings.'
+      },
+      {
+        title: 'String-concatenated query text',
+        severity: 'High',
+        pattern: /\bSELECT\b[\s\S]*\+|\+[\s\S]*\bFROM\b/i,
+        risk: 'Concatenating query fragments can allow unsafe input into SOQL.',
+        recommendation: 'Use static SOQL with bind variables or strictly whitelist dynamic fields and operators.'
+      },
+      {
+        title: 'Exposed Aura method',
+        severity: 'Medium',
+        pattern: /@AuraEnabled/i,
+        risk: 'Client-callable methods need explicit input validation and data access checks.',
+        recommendation: 'Validate inputs and enforce object/field permissions before returning or mutating data.'
+      },
+      {
+        title: 'Class uses without sharing',
+        severity: 'Medium',
+        pattern: /\bwithout\s+sharing\b/i,
+        risk: 'This bypasses record sharing and may expose or modify records the running user should not access.',
+        recommendation: 'Use inherited sharing unless elevated access is intentional and documented.'
+      },
+      {
+        title: 'Hardcoded Salesforce Id',
+        severity: 'Medium',
+        pattern: /['"][a-zA-Z0-9]{15}(?:[a-zA-Z0-9]{3})?['"]/,
+        risk: 'Hardcoded Ids usually break across orgs, sandboxes, packages, and deployments.',
+        recommendation: 'Use Custom Metadata, Custom Settings, DeveloperName, or a configuration lookup.'
+      },
+      {
+        title: 'seeAllData enabled',
+        severity: 'Medium',
+        pattern: /seeAllData\s*=\s*true/i,
+        risk: 'Tests depending on org data are brittle and can fail across orgs.',
+        recommendation: 'Create required test data inside the test unless platform metadata access requires otherwise.'
+      },
+      {
+        title: 'Broad catch block',
+        severity: 'Low',
+        pattern: /catch\s*\(\s*Exception\s+\w+\s*\)/i,
+        risk: 'Broad exception handling can hide the real failure or return unsafe details.',
+        recommendation: 'Catch specific exceptions where useful and log enough context for support.'
+      }
+    ];
+
+    function parseChangedLines(value, maxLine) {
+      const lines = new Set();
+      const parts = value.split(',').map(part => part.trim()).filter(Boolean);
+
+      for (const part of parts) {
+        const range = part.match(/^(\d+)\s*-\s*(\d+)$/);
+        const single = part.match(/^\d+$/);
+
+        if (range) {
+          const start = Number(range[1]);
+          const end = Number(range[2]);
+          for (let line = Math.min(start, end); line <= Math.max(start, end); line++) {
+            if (line >= 1 && line <= maxLine) lines.add(line);
+          }
+        } else if (single) {
+          const line = Number(part);
+          if (line >= 1 && line <= maxLine) lines.add(line);
+        }
+      }
+
+      return [...lines].sort((a, b) => a - b);
+    }
+
+    function isInsideLoop(lines, index) {
+      let openBlocks = 0;
+      for (let i = index; i >= 0; i--) {
+        const text = lines[i];
+        openBlocks += (text.match(/}/g) || []).length;
+        openBlocks -= (text.match(/{/g) || []).length;
+        if (/\b(for|while)\s*\(/.test(text) && openBlocks <= 0) return true;
+      }
+      return false;
+    }
+
+    function methodNameNear(lines, index) {
+      for (let i = index; i >= 0; i--) {
+        const match = lines[i].match(/\b(?:public|private|protected|global)\s+(?:static\s+)?[\w<>,\s]+\s+(\w+)\s*\(/);
+        if (match) return match[1];
+      }
+      return 'class scope';
+    }
+
+    function contextSnippet(lines, lineNumber, radius = 4) {
+      const start = Math.max(1, lineNumber - radius);
+      const end = Math.min(lines.length, lineNumber + radius);
+      const width = String(end).length;
+      const block = [];
+
+      for (let line = start; line <= end; line++) {
+        const marker = line === lineNumber ? '>' : ' ';
+        block.push(`${marker} ${String(line).padStart(width, ' ')} | ${lines[line - 1]}`);
+      }
+
+      return block.join('\n');
+    }
+
+    function analyze() {
+      const code = codeInput.value;
+      const lines = code.split(/\r?\n/);
+      const changedLines = parseChangedLines(changedLinesInput.value, lines.length);
+      const findings = [];
+
+      changedLinePills.innerHTML = '';
+      for (const line of changedLines) {
+        const pill = document.createElement('span');
+        pill.className = 'pill';
+        pill.textContent = `Line ${line}`;
+        changedLinePills.appendChild(pill);
+      }
+
+      if (!code.trim()) {
+        renderEmpty('No Apex code was provided.');
+        return;
+      }
+
+      if (!changedLines.length) {
+        renderEmpty('No valid changed line numbers were provided.');
+        return;
+      }
+
+      const scanLines = new Set();
+      for (const line of changedLines) {
+        for (let offset = -4; offset <= 4; offset++) {
+          const candidate = line + offset;
+          if (candidate >= 1 && candidate <= lines.length) scanLines.add(candidate);
+        }
+      }
+
+      for (const lineNumber of [...scanLines].sort((a, b) => a - b)) {
+        const index = lineNumber - 1;
+        const text = lines[index];
+        for (const rule of rules) {
+          if (!rule.pattern.test(text)) continue;
+          if (rule.inLoop && !isInsideLoop(lines, index)) continue;
+
+          findings.push({
+            ...rule,
+            lineNumber,
+            method: methodNameNear(lines, index),
+            evidence: text.trim(),
+            snippet: contextSnippet(lines, lineNumber)
+          });
+        }
+      }
+
+      const deduped = dedupeFindings(findings);
+      renderFindings(deduped, changedLines, lines);
+      promptOutput.value = buildPrompt(deduped, changedLines, lines);
+      statusEl.textContent = `${deduped.length} finding${deduped.length === 1 ? '' : 's'} from ${changedLines.length} changed line${changedLines.length === 1 ? '' : 's'}`;
+    }
+
+    function dedupeFindings(findings) {
+      const seen = new Set();
+      return findings.filter(finding => {
+        const key = `${finding.title}:${finding.lineNumber}:${finding.evidence}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    }
+
+    function renderEmpty(message) {
+      results.innerHTML = '';
+      const empty = document.createElement('div');
+      empty.className = 'empty';
+      empty.textContent = message;
+      results.appendChild(empty);
+      promptOutput.value = '';
+      statusEl.textContent = message;
+    }
+
+    function renderFindings(findings, changedLines, lines) {
+      results.innerHTML = '';
+
+      if (!findings.length) {
+        const empty = document.createElement('div');
+        empty.className = 'empty';
+        empty.textContent = 'No local rule findings near the changed lines. Use the focused prompt for deeper AI review.';
+        results.appendChild(empty);
+        return;
+      }
+
+      for (const finding of findings) {
+        const item = document.createElement('article');
+        item.className = `finding ${finding.severity}`;
+        item.innerHTML = `
+          <h3>[${escapeHtml(finding.severity)}] ${escapeHtml(finding.title)}</h3>
+          <p class="meta">Line ${finding.lineNumber} · ${escapeHtml(finding.method)}</p>
+          <p><strong>Risk:</strong> ${escapeHtml(finding.risk)}</p>
+          <p><strong>Evidence:</strong> <code>${escapeHtml(finding.evidence)}</code></p>
+          <p><strong>Recommendation:</strong> ${escapeHtml(finding.recommendation)}</p>
+          <pre>${escapeHtml(finding.snippet)}</pre>
+        `;
+        results.appendChild(item);
+      }
+    }
+
+    function buildPrompt(findings, changedLines, lines) {
+      if (!codeInput.value.trim() || !changedLines.length) return '';
+
+      const className = classNameInput.value.trim() || detectClassName(codeInput.value) || 'UnknownApexClass';
+      const snippets = changedLines.map(line => contextSnippet(lines, line, 8)).join('\n\n');
+      const localFindings = findings.length
+        ? findings.map(f => `- [${f.severity}] Line ${f.lineNumber}: ${f.title}. ${f.recommendation}`).join('\n')
+        : '- No local rule findings were detected near the changed lines.';
+
+      return `You are an expert Salesforce Apex reviewer.
+
+Review only the changed lines and nearby context unless a broader issue is necessary to explain the risk.
+
+Class or trigger: ${className}
+Changed lines: ${changedLines.join(', ')}
+
+Local rule findings:
+${localFindings}
+
+Review priorities:
+1. Security: sharing, CRUD/FLS, unsafe dynamic SOQL, exposed methods
+2. Governor limits and bulk safety
+3. Trigger design and recursion
+4. Data correctness
+5. Error handling
+6. Test impact
+
+Return:
+- Summary
+- Findings with severity
+- File/class location
+- Risk
+- Evidence
+- Recommended fix
+- Suggested test cases
+
+Changed-line context:
+\`\`\`apex
+${snippets}
+\`\`\`
+
+Full code:
+\`\`\`apex
+${codeInput.value}
+\`\`\``;
+    }
+
+    function detectClassName(code) {
+      const match = code.match(/\b(?:class|trigger)\s+(\w+)/);
+      return match ? match[1] : '';
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    async function copyText(value, label) {
+      if (!value.trim()) {
+        statusEl.textContent = 'Nothing to copy';
+        return;
+      }
+
+      await navigator.clipboard.writeText(value);
+      statusEl.textContent = `${label} copied`;
+    }
+
+    document.getElementById('reviewBtn').addEventListener('click', analyze);
+    document.getElementById('copyPromptBtn').addEventListener('click', () => copyText(promptOutput.value, 'AI prompt'));
+    document.getElementById('copyReportBtn').addEventListener('click', () => copyText(results.innerText, 'Feedback'));
+    document.getElementById('clearBtn').addEventListener('click', () => {
+      codeInput.value = '';
+      classNameInput.value = '';
+      changedLinesInput.value = '';
+      changedLinePills.innerHTML = '';
+      renderEmpty('Paste code, enter changed line numbers, then run review.');
+    });
+    document.getElementById('sampleBtn').addEventListener('click', () => {
+      classNameInput.value = 'AccountService';
+      changedLinesInput.value = '1, 3-5, 9-11';
+      codeInput.value = sampleCode;
+      analyze();
+    });
+  </script>
+</body>
+</html>
